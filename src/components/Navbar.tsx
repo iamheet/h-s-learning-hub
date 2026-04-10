@@ -3,11 +3,11 @@ import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
 const navLinks = [
+  { label: "Home", href: "#" },
+  { label: "Articles", href: "#articles" },
+  { label: "Categories", href: "#categories" },
   { label: "About", href: "#about" },
-  { label: "Courses", href: "#courses" },
-  { label: "Features", href: "#features" },
-  { label: "Testimonials", href: "#testimonials" },
-  { label: "Contact", href: "#contact" },
+  { label: "Newsletter", href: "#newsletter" },
 ];
 
 const Navbar = () => {
@@ -24,70 +24,46 @@ const Navbar = () => {
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      transition={{ duration: 0.6 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-background/80 backdrop-blur-xl border-b border-gold"
-          : "bg-transparent"
+        scrolled ? "bg-background/80 backdrop-blur-xl border-b border-emerald" : "bg-transparent"
       }`}
     >
       <div className="container mx-auto flex items-center justify-between py-4 px-4 md:px-8">
-        <a href="#" className="text-xl font-bold tracking-tight">
-          <span className="text-gradient-gold">LearnWith</span>{" "}
-          <span className="text-foreground">H</span>
+        <a href="#" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-emerald flex items-center justify-center">
+            <span className="text-sm font-bold text-primary-foreground">H</span>
+          </div>
+          <span className="text-lg font-display font-bold text-foreground">
+            LearnWith <span className="text-gradient-emerald">H</span>
+          </span>
         </a>
 
-        {/* Desktop */}
         <div className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200"
-            >
+            <a key={link.href} href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               {link.label}
             </a>
           ))}
-          <a
-            href="#courses"
-            className="px-5 py-2 text-sm font-semibold rounded-lg bg-gradient-gold text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            Get Started
+          <a href="#newsletter" className="px-5 py-2 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground hover:opacity-90 transition-opacity">
+            Subscribe
           </a>
         </div>
 
-        {/* Mobile toggle */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden text-foreground"
-        >
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-foreground">
           {mobileOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="md:hidden bg-background/95 backdrop-blur-xl border-b border-gold px-6 pb-6"
-        >
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="md:hidden bg-background/95 backdrop-blur-xl border-b border-emerald px-6 pb-6">
           {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              className="block py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
+            <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="block py-3 text-sm text-muted-foreground hover:text-foreground transition-colors">
               {link.label}
             </a>
           ))}
-          <a
-            href="#courses"
-            onClick={() => setMobileOpen(false)}
-            className="mt-2 block text-center px-5 py-2.5 text-sm font-semibold rounded-lg bg-gradient-gold text-primary-foreground"
-          >
-            Get Started
+          <a href="#newsletter" onClick={() => setMobileOpen(false)} className="mt-2 block text-center px-5 py-2.5 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground">
+            Subscribe
           </a>
         </motion.div>
       )}
