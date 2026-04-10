@@ -1,4 +1,4 @@
-import { Github, Twitter, Linkedin, Youtube } from "lucide-react";
+import { GithubIcon, TwitterIcon, LinkedinIcon, YoutubeIcon } from "lucide-react";
 
 const socials = [
   { icon: Twitter, href: "#" },
