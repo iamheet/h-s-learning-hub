@@ -4,30 +4,23 @@ import { Send } from "lucide-react";
 
 const ContactSection = () => {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-100px" });
+  const inView = useInView(ref, { once: true, margin: "-80px" });
   const [form, setForm] = useState({ name: "", email: "", message: "" });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
     setForm({ name: "", email: "", message: "" });
   };
 
   return (
-    <section id="contact" className="py-24 md:py-32 bg-secondary/30">
+    <section id="contact" className="py-24 md:py-32 bg-background">
       <div className="container mx-auto px-4" ref={ref}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
-          <span className="text-xs font-medium tracking-widest uppercase text-primary mb-4 block">
-            Contact
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-            Get in <span className="text-gradient-gold">Touch</span>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }} className="text-center mb-14">
+          <span className="text-xs font-medium tracking-widest uppercase text-primary mb-3 block">Contact</span>
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">
+            Get in <span className="text-gradient-emerald">Touch</span>
           </h2>
+          <p className="text-sm text-muted-foreground mt-3 max-w-md mx-auto">Have a question, collaboration idea, or just want to say hi? Drop a message.</p>
         </motion.div>
 
         <motion.form
@@ -41,16 +34,15 @@ const ContactSection = () => {
             { name: "name" as const, label: "Name", type: "text" },
             { name: "email" as const, label: "Email", type: "email" },
           ].map((field) => (
-            <div key={field.name}>
-              <input
-                type={field.type}
-                placeholder={field.label}
-                value={form[field.name]}
-                onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
-                required
-                className="w-full px-5 py-3.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground font-body text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all duration-200"
-              />
-            </div>
+            <input
+              key={field.name}
+              type={field.type}
+              placeholder={field.label}
+              value={form[field.name]}
+              onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}
+              required
+              className="w-full px-5 py-3.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+            />
           ))}
           <textarea
             placeholder="Your Message"
@@ -58,12 +50,9 @@ const ContactSection = () => {
             onChange={(e) => setForm({ ...form, message: e.target.value })}
             required
             rows={5}
-            className="w-full px-5 py-3.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground font-body text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all duration-200 resize-none"
+            className="w-full px-5 py-3.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all resize-none"
           />
-          <button
-            type="submit"
-            className="w-full flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-lg bg-gradient-gold text-primary-foreground hover:opacity-90 transition-all duration-200 glow-gold"
-          >
+          <button type="submit" className="w-full flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground hover:opacity-90 transition-all glow-emerald">
             Send Message <Send size={16} />
           </button>
         </motion.form>
