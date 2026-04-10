@@ -1,14 +1,26 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { Send, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const ContactSection = () => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.from("messages").insert([form]);
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setSubmitted(true);
     setForm({ name: "", email: "", message: "" });
   };
 
@@ -30,6 +42,13 @@ const ContactSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="max-w-lg mx-auto space-y-5"
         >
+          {submitted ? (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center gap-3 py-10 text-primary">
+              <CheckCircle2 size={40} />
+              <p className="font-medium text-foreground">Message sent! We'll get back to you soon.</p>
+            </motion.div>
+          ) : (
+            <>
           {[
             { name: "name" as const, label: "Name", type: "text" },
             { name: "email" as const, label: "Email", type: "email" },
@@ -52,9 +71,11 @@ const ContactSection = () => {
             rows={5}
             className="w-full px-5 py-3.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all resize-none"
           />
-          <button type="submit" className="w-full flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground hover:opacity-90 transition-all glow-emerald">
-            Send Message <Send size={16} />
+          <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 px-8 py-3.5 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground hover:opacity-90 transition-all glow-emerald disabled:opacity-50">
+            {loading ? "Sending..." : <> Send Message <Send size={16} /> </>}
           </button>
+            </>
+          )}
         </motion.form>
       </div>
     </section>

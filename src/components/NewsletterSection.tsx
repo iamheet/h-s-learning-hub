@@ -1,15 +1,26 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
 import { Mail, ArrowRight, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const NewsletterSection = () => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.from("subscribers").insert([{ email }]);
+    setLoading(false);
+    if (error) {
+      if (error.code === "23505") toast.error("You're already subscribed!");
+      else toast.error(error.message);
+      return;
+    }
     setSubmitted(true);
     setEmail("");
   };
@@ -53,8 +64,8 @@ const NewsletterSection = () => {
                 required
                 className="flex-1 px-5 py-3.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
               />
-              <button type="submit" className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground hover:opacity-90 transition-all glow-emerald">
-                Subscribe <ArrowRight size={16} />
+              <button type="submit" disabled={loading} className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground hover:opacity-90 transition-all glow-emerald disabled:opacity-50">
+                {loading ? "Subscribing..." : <> Subscribe <ArrowRight size={16} /> </>}
               </button>
             </form>
           )}

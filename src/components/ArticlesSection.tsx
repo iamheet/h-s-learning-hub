@@ -1,60 +1,19 @@
 import { motion, useInView } from "framer-motion";
-import { useRef } from "react";
-import { TrendingUp, Clock, ArrowRight, Bookmark } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
+import { TrendingUp, Clock, ArrowRight, Bookmark, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
 
-const featuredPost = {
-  category: "Investing",
-  title: "The Complete Guide to Building a Diversified Portfolio in 2024",
-  excerpt: "Learn how to spread risk across asset classes and build a portfolio that weathers any market condition. From index funds to alternative investments.",
-  author: "H",
-  date: "Apr 8, 2026",
-  readTime: "12 min read",
-};
-
-const posts = [
-  {
-    category: "Stock Market",
-    title: "5 Undervalued Stocks Smart Money Is Buying Right Now",
-    excerpt: "Institutional investors are quietly accumulating these positions. Here's what they see that retail investors are missing.",
-    date: "Apr 6, 2026",
-    readTime: "8 min",
-  },
-  {
-    category: "Personal Finance",
-    title: "The 50/30/20 Rule Is Dead — Here's What Works in 2026",
-    excerpt: "Why the classic budgeting rule no longer applies and the updated framework top financial advisors recommend.",
-    date: "Apr 4, 2026",
-    readTime: "6 min",
-  },
-  {
-    category: "Crypto",
-    title: "Bitcoin's Next Move: On-Chain Data Reveals the Answer",
-    excerpt: "Analyzing whale wallets, exchange flows, and miner behavior to predict Bitcoin's short-term trajectory.",
-    date: "Apr 2, 2026",
-    readTime: "10 min",
-  },
-  {
-    category: "Real Estate",
-    title: "REITs vs Physical Property: Which Builds Wealth Faster?",
-    excerpt: "A data-driven comparison of returns, effort, and tax efficiency between REITs and direct real estate investment.",
-    date: "Mar 30, 2026",
-    readTime: "9 min",
-  },
-  {
-    category: "Wealth Building",
-    title: "How I Built a ₹1 Crore Portfolio Before 30",
-    excerpt: "The exact strategy, mistakes, and mindset shifts that helped me reach financial independence in my twenties.",
-    date: "Mar 28, 2026",
-    readTime: "14 min",
-  },
-  {
-    category: "Tax Planning",
-    title: "Tax-Loss Harvesting: The Strategy Saving Investors Lakhs",
-    excerpt: "A step-by-step guide to legally reducing your tax bill while maintaining your investment strategy.",
-    date: "Mar 25, 2026",
-    readTime: "7 min",
-  },
-];
+interface Post {
+  id: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  author: string;
+  read_time: string;
+  created_at: string;
+  is_premium: boolean;
+}
 
 const categoryColors: Record<string, string> = {
   "Stock Market": "bg-emerald-dark/20 text-emerald-light",
@@ -69,6 +28,27 @@ const categoryColors: Record<string, string> = {
 const ArticlesSection = () => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
+  const navigate = useNavigate();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, title, excerpt, category, author, read_time, created_at, is_premium")
+        .eq("published", true)
+        .order("created_at", { ascending: false })
+        .limit(7);
+      if (error) console.error("Posts fetch error:", error.message);
+      if (data) setPosts(data);
+      setLoading(false);
+    };
+    fetchPosts();
+  }, []);
+
+  const featured = posts[0];
+  const rest = posts.slice(1);
 
   return (
     <section id="articles" className="py-24 md:py-32 bg-background">
@@ -80,76 +60,93 @@ const ArticlesSection = () => {
               Fresh <span className="text-gradient-emerald">Insights</span>
             </h2>
           </div>
-          <a href="#" className="hidden md:inline-flex items-center gap-1 text-sm text-primary hover:gap-2 transition-all font-medium">
-            View All <ArrowRight size={14} />
-          </a>
         </motion.div>
 
+        {loading && (
+          <div className="flex justify-center py-20">
+            <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          </div>
+        )}
+
+        {!loading && posts.length === 0 && (
+          <div className="text-center py-20 text-muted-foreground">
+            <TrendingUp size={40} className="mx-auto mb-4 text-primary/20" />
+            <p>No articles published yet. Check back soon!</p>
+          </div>
+        )}
+
         {/* Featured Post */}
-        <motion.article
-          initial={{ opacity: 0, y: 30 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="group mb-10 rounded-2xl border border-emerald bg-card p-6 md:p-10 hover:border-emerald-strong transition-all duration-300 cursor-pointer card-shadow"
-        >
-          <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start">
-            <div className="flex-1">
-              <span className={`inline-block px-3 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full mb-4 ${categoryColors[featuredPost.category]}`}>
-                {featuredPost.category}
-              </span>
-              <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
-                {featuredPost.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-5">{featuredPost.excerpt}</p>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">By {featuredPost.author}</span>
-                <span>•</span>
-                <span>{featuredPost.date}</span>
-                <span>•</span>
-                <span className="flex items-center gap-1"><Clock size={12} /> {featuredPost.readTime}</span>
+        {featured && (
+          <motion.article
+            initial={{ opacity: 0, y: 30 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            onClick={() => navigate(`/blog/${featured.id}`)}
+            className="group mb-10 rounded-2xl border border-emerald bg-card p-6 md:p-10 hover:border-emerald-strong transition-all duration-300 cursor-pointer card-shadow"
+          >
+            <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start">
+              <div className="flex-1">
+                <span className={`inline-block px-3 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full mb-4 ${categoryColors[featured.category] || "bg-primary/10 text-primary"}`}>
+                  {featured.category}
+                </span>
+                {featured.is_premium && (
+                  <span className="inline-flex items-center gap-1 ml-2 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full bg-yellow-500/10 text-yellow-400 mb-4">
+                    <Lock size={9} /> Premium
+                  </span>
+                )}
+                <h3 className="text-xl md:text-2xl font-display font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
+                  {featured.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-5">{featured.excerpt}</p>
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">By {featured.author}</span>
+                  <span>•</span>
+                  <span>{new Date(featured.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                  {featured.read_time && <><span>•</span><span className="flex items-center gap-1"><Clock size={12} /> {featured.read_time}</span></>}
+                </div>
+              </div>
+              <div className="w-full md:w-64 h-40 md:h-48 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
+                <TrendingUp size={48} className="text-primary/20" />
               </div>
             </div>
-            <div className="w-full md:w-64 h-40 md:h-48 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
-              <TrendingUp size={48} className="text-primary/20" />
-            </div>
-          </div>
-        </motion.article>
+          </motion.article>
+        )}
 
         {/* Post grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post, i) => (
-            <motion.article
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.15 + i * 0.08 }}
-              className="group rounded-xl border border-border bg-card p-5 hover:border-emerald hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <span className={`inline-block px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full ${categoryColors[post.category] || "bg-primary/10 text-primary"}`}>
-                  {post.category}
-                </span>
-                <button className="text-muted-foreground hover:text-primary transition-colors">
-                  <Bookmark size={14} />
-                </button>
-              </div>
-              <h3 className="text-base font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
-                {post.title}
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-2">{post.excerpt}</p>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{post.date}</span>
-                <span className="flex items-center gap-1"><Clock size={11} /> {post.readTime}</span>
-              </div>
-            </motion.article>
-          ))}
-        </div>
-
-        <div className="mt-10 text-center md:hidden">
-          <a href="#" className="inline-flex items-center gap-1 text-sm text-primary font-medium">
-            View All Articles <ArrowRight size={14} />
-          </a>
-        </div>
+        {rest.length > 0 && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {rest.map((post, i) => (
+              <motion.article
+                key={post.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.5, delay: 0.15 + i * 0.08 }}
+                onClick={() => navigate(`/blog/${post.id}`)}
+                className="group rounded-xl border border-border bg-card p-5 hover:border-emerald hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <span className={`inline-block px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full ${categoryColors[post.category] || "bg-primary/10 text-primary"}`}>
+                    {post.category}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {post.is_premium && <Lock size={13} className="text-yellow-400" />}
+                    <button className="text-muted-foreground hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                      <Bookmark size={14} />
+                    </button>
+                  </div>
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                  {post.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-2">{post.excerpt}</p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                  {post.read_time && <span className="flex items-center gap-1"><Clock size={11} /> {post.read_time}</span>}
+                </div>
+              </motion.article>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

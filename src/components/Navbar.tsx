@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const navLinks = [
   { label: "Home", href: "#" },
@@ -13,6 +15,8 @@ const navLinks = [
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -48,6 +52,15 @@ const Navbar = () => {
           <a href="#newsletter" className="px-5 py-2 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground hover:opacity-90 transition-opacity">
             Subscribe
           </a>
+          {user ? (
+            <button onClick={signOut} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <LogOut size={15} /> Sign Out
+            </button>
+          ) : (
+            <button onClick={() => navigate("/login")} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <LogIn size={15} /> Sign In
+            </button>
+          )}
         </div>
 
         <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-foreground">
@@ -65,6 +78,15 @@ const Navbar = () => {
           <a href="#newsletter" onClick={() => setMobileOpen(false)} className="mt-2 block text-center px-5 py-2.5 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground">
             Subscribe
           </a>
+          {user ? (
+            <button onClick={signOut} className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <LogOut size={15} /> Sign Out
+            </button>
+          ) : (
+            <button onClick={() => { navigate("/login"); setMobileOpen(false); }} className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <LogIn size={15} /> Sign In
+            </button>
+          )}
         </motion.div>
       )}
     </motion.nav>
