@@ -1,10 +1,10 @@
-import { GithubIcon, TwitterIcon, LinkedinIcon, YoutubeIcon } from "lucide-react";
+import { Globe, MessageCircle, Bookmark, Code2 } from "lucide-react";
 
 const socials = [
-  { icon: Twitter, href: "#" },
-  { icon: Linkedin, href: "#" },
-  { icon: Youtube, href: "#" },
-  { icon: Github, href: "#" },
+  { icon: MessageCircle, href: "#" },
+  { icon: Bookmark, href: "#" },
+  { icon: Globe, href: "#" },
+  { icon: Code2, href: "#" },
 ];
 
 const Footer = () => (
