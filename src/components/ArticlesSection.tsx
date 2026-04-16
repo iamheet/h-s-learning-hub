@@ -25,7 +25,12 @@ const categoryColors: Record<string, string> = {
   Investing: "bg-primary/10 text-primary",
 };
 
-const ArticlesSection = () => {
+interface ArticlesSectionProps {
+  activeCategory: string | null;
+  onCategorySelect: (category: string | null) => void;
+}
+
+const ArticlesSection = ({ activeCategory, onCategorySelect }: ArticlesSectionProps) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
   const navigate = useNavigate();
@@ -33,19 +38,21 @@ const ArticlesSection = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     const fetchPosts = async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("posts")
         .select("id, title, excerpt, category, author, read_time, created_at, is_premium")
         .eq("published", true)
-        .order("created_at", { ascending: false })
-        .limit(7);
+        .order("created_at", { ascending: false });
+      if (activeCategory) query = query.eq("category", activeCategory);
+      const { data, error } = await query;
       if (error) console.error("Posts fetch error:", error.message);
       if (data) setPosts(data);
       setLoading(false);
     };
     fetchPosts();
-  }, []);
+  }, [activeCategory]);
 
   const featured = posts[0];
   const rest = posts.slice(1);
@@ -53,13 +60,36 @@ const ArticlesSection = () => {
   return (
     <section id="articles" className="py-24 md:py-32 bg-background">
       <div className="container mx-auto px-4" ref={ref}>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }} className="flex items-end justify-between mb-12">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }} className="flex items-end justify-between mb-8">
           <div>
             <span className="text-xs font-medium tracking-widest uppercase text-primary mb-3 block">Latest Articles</span>
             <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">
               Fresh <span className="text-gradient-emerald">Insights</span>
             </h2>
           </div>
+        </motion.div>
+
+        {/* Category filter pills */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5, delay: 0.1 }} className="flex flex-wrap gap-2 mb-10">
+          <button
+            onClick={() => activeCategory && onCategorySelect(null)}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+              !activeCategory ? "bg-primary text-background" : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            All
+          </button>
+          {["Stock Market", "Personal Finance", "Crypto", "Real Estate", "Wealth Building", "Tax Planning", "Investing"].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => onCategorySelect(activeCategory === cat ? null : cat)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                activeCategory === cat ? "bg-primary text-background" : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </motion.div>
 
         {loading && (

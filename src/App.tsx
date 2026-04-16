@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
 import BlogPost from "./pages/BlogPost.tsx";
 import Admin from "./pages/Admin.tsx";
+import Profile from "./pages/Profile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/blog/:id" element={<BlogPost />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/profile" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

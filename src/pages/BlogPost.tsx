@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { Clock, ArrowLeft, Calendar, Lock, Zap } from "lucide-react";
+import { Clock, ArrowLeft, Calendar, Lock, Zap, ChevronDown } from "lucide-react";
 import { usePremium } from "@/hooks/usePremium";
 import PremiumModal from "@/components/PremiumModal";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface PostFaq {
+  id: string;
+  question: string;
+  answer: string;
+  order_index: number;
+}
 
 interface Post {
   id: string;
@@ -33,6 +41,8 @@ const BlogPost = () => {
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [faqs, setFaqs] = useState<PostFaq[]>([]);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
   const { isPremium, loading: premiumLoading, refetch } = usePremium();
 
   useEffect(() => {
@@ -49,6 +59,16 @@ const BlogPost = () => {
     };
     fetchPost();
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (!id) return;
+    supabase
+      .from("post_faqs")
+      .select("id, question, answer, order_index")
+      .eq("post_id", id)
+      .order("order_index", { ascending: true })
+      .then(({ data }) => setFaqs(data ?? []));
+  }, [id]);
 
   if (loading || premiumLoading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
@@ -114,15 +134,12 @@ const BlogPost = () => {
         {/* Content or Paywall */}
         {isLocked ? (
           <>
-            {/* Show first ~300 chars blurred */}
             <div className="relative">
               <div className="text-foreground/90 leading-relaxed text-sm" style={{ whiteSpace: "pre-wrap" }}>
                 {post.content.slice(0, 300)}...
               </div>
               <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
             </div>
-
-            {/* Paywall card */}
             <div className="mt-8 rounded-2xl border border-yellow-500/20 bg-yellow-500/5 p-8 text-center">
               <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
                 <Lock size={22} className="text-yellow-400" />
@@ -142,6 +159,42 @@ const BlogPost = () => {
         ) : (
           <div className="text-foreground/90 leading-relaxed space-y-4" style={{ whiteSpace: "pre-wrap" }}>
             {post.content}
+          </div>
+        )}
+
+        {/* ── Per-post FAQs ── */}
+        {faqs.length > 0 && (
+          <div className="mt-14 pt-10 border-t border-border">
+            <h2 className="font-display text-xl font-bold text-foreground mb-5">Frequently Asked Questions</h2>
+            <div className="space-y-3">
+              {faqs.map((faq) => (
+                <div key={faq.id} className={`bg-card border rounded-xl overflow-hidden transition-colors ${
+                  openFaq === faq.id ? "border-primary/40" : "border-border"
+                }`}>
+                  <button
+                    onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left gap-4"
+                  >
+                    <span className="text-sm font-semibold text-foreground">{faq.question}</span>
+                    <ChevronDown size={15} className={`text-muted-foreground flex-shrink-0 transition-transform duration-200 ${
+                      openFaq === faq.id ? "rotate-180" : ""
+                    }`} />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {openFaq === faq.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <p className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed">{faq.answer}</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </article>

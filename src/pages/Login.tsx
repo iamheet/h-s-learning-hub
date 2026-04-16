@@ -17,6 +17,16 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
+    if (email.toLowerCase() === "admin@gmail.com") {
+      setLoading(false);
+      toast.error("User does not exist.");
+      return;
+    }
+
+    if (!isSignUp) {
+      await supabase.auth.signOut();
+    }
+
     const { error } = isSignUp
       ? await supabase.auth.signUp({
           email,
@@ -50,7 +60,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-start md:items-center justify-center px-4 pt-8 md:pt-0">
       {/* Background glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-gradient-to-r from-emerald-DEFAULT/10 to-transparent blur-3xl" />

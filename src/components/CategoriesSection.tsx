@@ -5,16 +5,26 @@ import { TrendingUp, Wallet, Building2, Bitcoin, PiggyBank, BarChart3, Receipt }
 const categories = [
   { icon: TrendingUp, name: "Stock Market", count: 24, desc: "Analysis, picks & strategy" },
   { icon: Wallet, name: "Personal Finance", count: 18, desc: "Budgeting & saving smart" },
-  { icon: Bitcoin, name: "Cryptocurrency", count: 15, desc: "Crypto insights & trends" },
+  { icon: Bitcoin, name: "Crypto", count: 15, desc: "Crypto insights & trends" },
   { icon: Building2, name: "Real Estate", count: 12, desc: "Property investment guide" },
   { icon: PiggyBank, name: "Wealth Building", count: 20, desc: "Long-term growth plans" },
   { icon: BarChart3, name: "Mutual Funds", count: 14, desc: "Fund reviews & SIP tips" },
   { icon: Receipt, name: "Tax Planning", count: 10, desc: "Save more, legally" },
 ];
 
-const CategoriesSection = () => {
+interface CategoriesSectionProps {
+  activeCategory: string | null;
+  onCategorySelect: (category: string | null) => void;
+}
+
+const CategoriesSection = ({ activeCategory, onCategorySelect }: CategoriesSectionProps) => {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
+
+  const handleClick = (name: string) => {
+    onCategorySelect(activeCategory === name ? null : name);
+    document.getElementById("articles")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <section id="categories" className="py-24 md:py-32 bg-secondary/30">
@@ -28,13 +38,17 @@ const CategoriesSection = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {categories.map((cat, i) => (
-            <motion.a
+            <motion.button
               key={i}
-              href="#articles"
+              onClick={() => handleClick(cat.name)}
               initial={{ opacity: 0, y: 20 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.06 }}
-              className="group p-5 rounded-xl border border-border bg-card hover:border-emerald transition-all duration-300 cursor-pointer text-center"
+              className={`group p-5 rounded-xl border bg-card transition-all duration-300 cursor-pointer text-center ${
+                activeCategory === cat.name
+                  ? "border-emerald-strong bg-primary/5"
+                  : "border-border hover:border-emerald"
+              }`}
             >
               <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-primary/20 transition-colors">
                 <cat.icon className="w-5 h-5 text-primary" />
@@ -42,9 +56,16 @@ const CategoriesSection = () => {
               <h3 className="text-sm font-semibold text-foreground mb-1">{cat.name}</h3>
               <p className="text-xs text-muted-foreground mb-2">{cat.desc}</p>
               <span className="text-[10px] font-medium text-primary">{cat.count} articles</span>
-            </motion.a>
+            </motion.button>
           ))}
         </div>
+        {activeCategory && (
+          <div className="text-center mt-6">
+            <button onClick={() => onCategorySelect(null)} className="text-xs text-muted-foreground hover:text-primary underline transition-colors">
+              Clear filter
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

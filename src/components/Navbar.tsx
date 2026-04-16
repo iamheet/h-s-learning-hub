@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Menu, X, LogOut, LogIn } from "lucide-react";
+import { Menu, X, LogIn, UserCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
@@ -15,7 +15,7 @@ const navLinks = [
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,8 +53,12 @@ const Navbar = () => {
             Subscribe
           </a>
           {user ? (
-            <button onClick={signOut} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <LogOut size={15} /> Sign Out
+            <button onClick={() => navigate("/profile")} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {user.user_metadata?.avatar_url ? (
+                <img src={user.user_metadata.avatar_url} alt="avatar" className="w-7 h-7 rounded-full object-cover border border-primary" />
+              ) : (
+                <UserCircle size={22} />
+              )}
             </button>
           ) : (
             <button onClick={() => navigate("/login")} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -70,6 +74,15 @@ const Navbar = () => {
 
       {mobileOpen && (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="md:hidden bg-background/95 backdrop-blur-xl border-b border-emerald px-6 pb-6">
+          {user ? (
+            <button onClick={() => { navigate("/profile"); setMobileOpen(false); }} className="mt-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <UserCircle size={15} /> Profile
+            </button>
+          ) : (
+            <button onClick={() => { navigate("/login"); setMobileOpen(false); }} className="mt-4 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <LogIn size={15} /> Sign In
+            </button>
+          )}
           {navLinks.map((link) => (
             <a key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className="block py-3 text-sm text-muted-foreground hover:text-foreground transition-colors">
               {link.label}
@@ -78,15 +91,6 @@ const Navbar = () => {
           <a href="#newsletter" onClick={() => setMobileOpen(false)} className="mt-2 block text-center px-5 py-2.5 text-sm font-semibold rounded-lg bg-gradient-emerald text-primary-foreground">
             Subscribe
           </a>
-          {user ? (
-            <button onClick={signOut} className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <LogOut size={15} /> Sign Out
-            </button>
-          ) : (
-            <button onClick={() => { navigate("/login"); setMobileOpen(false); }} className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-              <LogIn size={15} /> Sign In
-            </button>
-          )}
         </motion.div>
       )}
     </motion.nav>

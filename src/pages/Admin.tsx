@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Trash2, Eye, EyeOff, PlusCircle, LogOut, Mail, MessageSquare, Lock, Pencil, Crown } from "lucide-react";
+import { Trash2, Eye, EyeOff, PlusCircle, LogOut, Mail, MessageSquare, Lock, Pencil, Crown, Plus, X } from "lucide-react";
+
+interface PostFaq {
+  id?: string;
+  question: string;
+  answer: string;
+  order_index: number;
+}
 
 interface Post {
   id: string;
@@ -57,9 +64,12 @@ const Admin = () => {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"write" | "manage" | "subscribers" | "messages" | "premium">("write");
+  const [tab, setTab] = useState<"write" | "manage" | "subscribers" | "messages" | "premium" | "faqs">("write");
   const [filter, setFilter] = useState<"all" | "live" | "drafts">("all");
   const [expandedMsg, setExpandedMsg] = useState<string | null>(null);
+  const [faqs, setFaqs] = useState<PostFaq[]>([]);
+  const [faqQ, setFaqQ] = useState("");
+  const [faqA, setFaqA] = useState("");
 
   const filteredPosts = posts.filter(p =>
     filter === "all" ? true : filter === "live" ? p.published : !p.published
@@ -124,7 +134,6 @@ const Admin = () => {
     setLoginLoading(false);
     if (error) { toast.error(error.message); return; }
     if (data.user?.email !== ADMIN_EMAIL) {
-      await supabase.auth.signOut();
       toast.error("Access denied. Not an admin account.");
       return;
     }
@@ -162,6 +171,7 @@ const Admin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    let postId = editingId;
     if (editingId) {
       const { error } = await supabase.from("posts").update(form).eq("id", editingId);
       setSaving(false);
@@ -169,12 +179,23 @@ const Admin = () => {
       toast.success("Post updated!");
       setEditingId(null);
     } else {
-      const { error } = await supabase.from("posts").insert([form]);
+      const { data, error } = await supabase.from("posts").insert([form]).select("id").single();
       setSaving(false);
-      if (error) { toast.error(error.message); return; }
+      if (error || !data) { toast.error(error?.message ?? "Failed"); return; }
       toast.success("Post saved!");
+      postId = data.id;
+    }
+    // sync faqs
+    const { error: delErr } = await supabase.from("post_faqs").delete().eq("post_id", postId);
+    if (delErr) { toast.error("FAQ delete failed: " + delErr.message); }
+    if (faqs.length > 0) {
+      const { error: insErr } = await supabase.from("post_faqs").insert(faqs.map((f, i) => ({ post_id: postId, question: f.question, answer: f.answer, order_index: i })));
+      if (insErr) { toast.error("FAQ save failed: " + insErr.message); }
     }
     setForm(emptyForm);
+    setFaqs([]);
+    setFaqQ("");
+    setFaqA("");
     fetchPosts();
     setTab("manage");
   };
@@ -192,6 +213,11 @@ const Admin = () => {
       is_premium: data.is_premium,
     });
     setEditingId(id);
+    // load existing post faqs
+    const { data: faqData } = await supabase.from("post_faqs").select("*").eq("post_id", id).order("order_index", { ascending: true });
+    setFaqs((faqData ?? []).map(f => ({ id: f.id, question: f.question, answer: f.answer, order_index: f.order_index })));
+    setFaqQ("");
+    setFaqA("");
     setTab("write");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -270,6 +296,7 @@ const Admin = () => {
     { key: "subscribers", label: `📧 Subscribers (${subscribers.length})` },
     { key: "messages", label: `💬 Messages (${messages.length})` },
     { key: "premium", label: `👑 Premium (${premiumUsers.length})` },
+    { key: "faqs", label: "❓ Site FAQs" },
   ] as const;
 
   return (
@@ -310,7 +337,7 @@ const Admin = () => {
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-display font-bold text-foreground">{editingId ? "Edit Post" : "New Post"}</h2>
               {editingId && (
-                <button type="button" onClick={() => { setForm(emptyForm); setEditingId(null); }}
+                <button type="button" onClick={() => { setForm(emptyForm); setEditingId(null); setFaqs([]); setFaqQ(""); setFaqA(""); }}
                   className="text-sm text-muted-foreground hover:text-foreground transition px-3 py-1.5 rounded-lg hover:bg-muted">
                   ✕ Cancel Edit
                 </button>
@@ -346,6 +373,33 @@ const Admin = () => {
                 placeholder={"Write your full article here...\n\nUse blank lines to separate paragraphs."} rows={20}
                 className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition resize-y text-sm leading-relaxed" />
             </div>
+            {/* ── Post FAQs ── */}
+            <div className="border-t border-border pt-5 space-y-3">
+              <p className="text-sm font-semibold text-foreground">Post FAQs <span className="text-xs font-normal text-muted-foreground">(shown at the bottom of the post)</span></p>
+              {faqs.map((f, i) => (
+                <div key={i} className="flex items-start justify-between gap-3 bg-muted/50 border border-border rounded-lg px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{f.question}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{f.answer}</p>
+                  </div>
+                  <button type="button" onClick={() => setFaqs(prev => prev.filter((_, idx) => idx !== i))} className="flex-shrink-0 text-muted-foreground hover:text-destructive transition">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <input value={faqQ} onChange={e => setFaqQ(e.target.value)} placeholder="Question"
+                className="w-full bg-muted border border-border rounded-lg px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition text-sm" />
+              <textarea value={faqA} onChange={e => setFaqA(e.target.value)} placeholder="Answer" rows={2}
+                className="w-full bg-muted border border-border rounded-lg px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition resize-none text-sm" />
+              <button type="button" onClick={() => {
+                if (!faqQ.trim() || !faqA.trim()) return toast.error("Enter question and answer");
+                setFaqs(prev => [...prev, { question: faqQ.trim(), answer: faqA.trim(), order_index: prev.length }]);
+                setFaqQ(""); setFaqA("");
+              }} className="flex items-center gap-1.5 text-sm text-primary border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition">
+                <Plus size={13} /> Add FAQ
+              </button>
+            </div>
+
             <div className="flex items-center justify-between pt-2 border-t border-border">
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -496,6 +550,9 @@ const Admin = () => {
             )}
           </div>
         )}
+        {/* Site FAQs Tab */}
+        {tab === "faqs" && <SiteFaqsManager />}
+
         {/* Premium Users Tab */}
         {tab === "premium" && (
           <div>
@@ -551,6 +608,122 @@ const Admin = () => {
         )}
 
       </div>
+    </div>
+  );
+};
+
+// ── Site FAQs Manager ─────────────────────────────────────────────────────
+interface SiteFaq {
+  id: string;
+  question: string;
+  answer: string;
+  order_index: number;
+}
+
+const SiteFaqsManager = () => {
+  const [faqs, setFaqs] = useState<SiteFaq[]>([]);
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [orderIndex, setOrderIndex] = useState(0);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    const { data } = await supabase.from("faqs").select("*").order("order_index", { ascending: true });
+    setFaqs(data ?? []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const save = async () => {
+    if (!question.trim() || !answer.trim()) return toast.error("Question and answer required");
+    setSaving(true);
+    const payload = { question, answer, order_index: orderIndex };
+    if (editId) {
+      const { error } = await supabase.from("faqs").update(payload).eq("id", editId);
+      if (error) toast.error(error.message); else { toast.success("FAQ updated!"); reset(); }
+    } else {
+      const { error } = await supabase.from("faqs").insert(payload);
+      if (error) toast.error(error.message); else { toast.success("FAQ added!"); reset(); }
+    }
+    setSaving(false);
+    load();
+  };
+
+  const del = async (id: string) => {
+    if (!confirm("Delete this FAQ?")) return;
+    await supabase.from("faqs").delete().eq("id", id);
+    toast.success("Deleted");
+    load();
+  };
+
+  const startEdit = (f: SiteFaq) => {
+    setQuestion(f.question); setAnswer(f.answer); setOrderIndex(f.order_index); setEditId(f.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const reset = () => { setQuestion(""); setAnswer(""); setOrderIndex(0); setEditId(null); };
+
+  const inp = "w-full bg-muted border border-border rounded-lg px-4 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition";
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-display font-bold text-foreground">Site FAQs</h2>
+        <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">{faqs.length} total</span>
+      </div>
+
+      {/* Form */}
+      <div className="space-y-4 mb-8">
+        <div>
+          <label className="block text-sm text-muted-foreground mb-1.5">Question</label>
+          <input value={question} onChange={e => setQuestion(e.target.value)} placeholder="e.g. What is H&S Learning Hub?" className={inp} />
+        </div>
+        <div>
+          <label className="block text-sm text-muted-foreground mb-1.5">Answer</label>
+          <textarea value={answer} onChange={e => setAnswer(e.target.value)} placeholder="Write the answer..." rows={3}
+            className={`${inp} resize-none`} />
+        </div>
+        <div>
+          <label className="block text-sm text-muted-foreground mb-1.5">Order <span className="text-xs opacity-60">(lower = shown first)</span></label>
+          <input type="number" value={orderIndex} onChange={e => setOrderIndex(Number(e.target.value))} className={`${inp} w-32`} />
+        </div>
+        <div className="flex items-center gap-3 pt-1">
+          <button onClick={save} disabled={saving}
+            className="flex items-center gap-2 bg-gradient-emerald text-primary-foreground font-semibold px-6 py-2.5 rounded-lg hover:opacity-90 transition disabled:opacity-50">
+            <PlusCircle size={16} />
+            {saving ? "Saving..." : editId ? "Update FAQ" : "Add FAQ"}
+          </button>
+          {editId && (
+            <button onClick={reset} className="text-sm text-muted-foreground hover:text-foreground transition px-3 py-2 rounded-lg hover:bg-muted">
+              ✕ Cancel
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* List */}
+      {faqs.length === 0 ? (
+        <div className="text-center py-20 text-muted-foreground">
+          <p>No site FAQs yet. Add your first one above.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {faqs.map((f) => (
+            <div key={f.id} className="flex items-start justify-between bg-card border border-border rounded-xl px-5 py-4 hover:border-emerald transition gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">{f.question}</p>
+                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{f.answer}</p>
+                <p className="text-xs text-muted-foreground/40 mt-1">Order: {f.order_index}</p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <button onClick={() => startEdit(f)} className="text-muted-foreground hover:text-primary transition"><Pencil size={15} /></button>
+                <button onClick={() => del(f.id)} className="text-muted-foreground hover:text-destructive transition"><Trash2 size={15} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
